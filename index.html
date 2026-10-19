@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>正负能量盒子</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="能量盒子">
+<meta name="theme-color" content="#0d1020">
+<style>
+  :root {
+    --bg: #0d1020;
+    --pos: #ff9db8;
+    --pos2: #ffd3a5;
+    --neg: #6ea8ff;
+    --neg2: #9b8cff;
+    --text: #eef0ff;
+    --muted: #8f95b8;
+    --card: rgba(255,255,255,.045);
+    --line: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+    background: radial-gradient(1100px 560px at 15% -8%, #1a2040 0%, var(--bg) 62%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+  .page { max-width: 1280px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 24px; }
+  h1 {
+    font-size: 25px; font-weight: 600; letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--pos), var(--pos2), var(--neg), var(--neg2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; font-size: 13px; }
+
+  .toolbar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 14px; margin-bottom: 22px;
+  }
+  .toolbar input[type=search] {
+    flex: 1; min-width: 160px; background: rgba(255,255,255,.05);
+    border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 12px; color: var(--text); font-size: 13px; outline: none;
+  }
+  .toolbar input[type=search]:focus { border-color: rgba(255,157,184,.6); }
+  .stat { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .stat b { color: var(--text); font-weight: 600; }
+  .ghost {
+    background: rgba(255,255,255,.06); color: var(--text);
+    border: 1px solid var(--line); border-radius: 9px;
+    padding: 8px 13px; font-size: 12.5px; cursor: pointer; transition: .18s;
+  }
+  .ghost:hover { background: rgba(255,255,255,.12); }
+
+  .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 900px) { .boxes { grid-template-columns: 1fr; } }
+
+  .box { border-radius: 18px; padding: 18px; backdrop-filter: blur(8px); }
+  .box.pos { background: linear-gradient(160deg, rgba(255,157,184,.10), rgba(255,211,165,.05)); border: 1px solid rgba(255,157,184,.30); }
+  .box.neg { background: linear-gradient(160deg, rgba(110,168,255,.10), rgba(155,140,255,.05)); border: 1px solid rgba(110,168,255,.30); }
+
+  .box-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .box-head h2 { font-size: 16.5px; font-weight: 600; }
+  .box.pos h2 { color: var(--pos); }
+  .box.neg h2 { color: var(--neg); }
+  .box-head .num { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1; background: rgba(255,255,255,.06); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 13.5px; outline: none; transition: .2s;
+  }
+  .box.pos input:focus { border-color: var(--pos); }
+  .box.neg input:focus { border-color: var(--neg); }
+  .input-row button {
+    border: none; border-radius: 10px; padding: 0 16px;
+    font-size: 13.5px; cursor: pointer; color: #14162a; font-weight: 600; transition: .15s;
+  }
+  .input-row button:hover { transform: translateY(-1px); }
+  .box.pos .input-row button { background: linear-gradient(135deg, var(--pos), var(--pos2)); }
+  .box.neg .input-row button { background: linear-gradient(135deg, var(--neg), var(--neg2)); }
+  .input-tip { font-size: 11px; color: var(--muted); margin: 8px 0 14px; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .filters button {
+    font-size: 11.5px; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); color: var(--muted); transition: .15s;
+  }
+  .filters button:hover { color: var(--text); }
+  .filters button.on { color: #14162a; font-weight: 600; }
+  .box.pos .filters button.on { background: var(--pos); border-color: var(--pos); }
+  .box.neg .filters button.on { background: var(--neg); border-color: var(--neg); }
+
+  .group { margin-bottom: 12px; border-radius: 12px; background: rgba(255,255,255,.028); padding: 10px 12px; }
+  .group-head { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+  .group-head .arrow { font-size: 10px; color: var(--muted); transition: transform .2s; width: 10px; }
+  .group.collapsed .group-head .arrow { transform: rotate(-90deg); }
+  .group-name { font-size: 13px; font-weight: 600; }
+  .group-n { font-size: 11px; color: var(--muted); margin-left: auto; }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .group.collapsed .tags { display: none; }
+
+  .tag {
+    position: relative; display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 9px; border-radius: 8px; font-size: 12.5px;
+    animation: pop .22s ease; cursor: pointer;
+  }
+  .box.pos .tag { background: rgba(255,157,184,.14); border: 1px solid rgba(255,157,184,.32); }
+  .box.neg .tag { background: rgba(110,168,255,.13); border: 1px solid rgba(110,168,255,.32); }
+  .tag:hover { filter: brightness(1.18); }
+  .tag .del { opacity: .35; font-size: 11px; }
+  .tag .del:hover { opacity: 1; }
+  .tag .pin { font-size: 9px; opacity: .75; }
+  @keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .pop {
+    position: fixed; z-index: 99; background: #1b2040; border: 1px solid rgba(255,255,255,.16);
+    border-radius: 11px; padding: 6px; box-shadow: 0 12px 34px rgba(0,0,0,.55); min-width: 150px;
+    max-height: 70vh; overflow-y: auto;
+  }
+  .pop div { padding: 7px 10px; border-radius: 7px; font-size: 12.5px; cursor: pointer; color: var(--text); }
+  .pop div:hover { background: rgba(255,255,255,.09); }
+  .pop div.cur { color: var(--pos); font-weight: 600; }
+  .pop .sep { height: 1px; background: var(--line); margin: 4px 2px; padding: 0; }
+  .pop .sep:hover { background: var(--line); }
+
+  .empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 24px 0; }
+
+  .float-item { position: absolute; pointer-events: none; font-size: 15px; animation: rise 1.3s ease-out forwards; }
+  @keyframes rise { to { transform: translateY(-110px) scale(.4); opacity: 0; } }
+
+  footer { margin-top: 26px; text-align: center; color: var(--muted); font-size: 11.5px; line-height: 1.9; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>正负能量盒子</h1>
+    <p>把温暖的事物放进正能量盒子，把觉察到的消耗放进负能量盒子 —— 看见，即是改变的开始。</p>
+  </header>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="🔍 搜索标签…">
+    <span class="stat" id="stat"></span>
+    <button class="ghost" onclick="toggleAll()">展开 / 收起全部</button>
+    <button class="ghost" onclick="exportData()">导出备份</button>
+    <button class="ghost" onclick="importData()">导入备份</button>
+    <input type="file" id="fileInput" accept=".json" hidden>
+  </div>
+
+  <div class="boxes">
+    <section class="box pos" id="posBox">
+      <div class="box-head">
+        <h2>🌟 正能量盒子</h2><span class="num" id="posNum"></span>
+      </div>
+      <div class="input-row">
+        <input id="posInput" type="text" placeholder="爱人送的花 / 空调的适宜温度…" maxlength="40">
+        <button onclick="addTag('pos')">放入</button>
+      </div>
+      <div class="input-tip">回车快速添加，会自动判断类别</div>
+      <div class="filters" id="posFilters"></div>
+      <div id="posGroups"></div>
+    </section>
+
+    <section class="box neg" id="negBox">
+      <div class="box-head">
+        <h2>🌧️ 负能量盒子</h2><span class="num" id="negNum"></span>
+      </div>
+      <div class="input-row">
+        <input id="negInput" type="text" placeholder="熬夜 / 刷手机停不下来…" maxlength="40">
+        <button onclick="addTag('neg')">觉察</button>
+      </div>
+      <div class="input-tip">觉察不是批判，只是温柔地看见</div>
+      <div class="filters" id="negFilters"></div>
+      <div id="negGroups"></div>
+    </section>
+  </div>
+
+  <footer>
+    点击标签可手动修改类别（修改后会被记住）· 数据保存在本地浏览器<br>
+    「导出备份」可保存 JSON 文件，换设备时用「导入备份」恢复
+  </footer>
+</div>
+
+<script>
+/* ============ 类别定义 ============ */
+const CATS = {
+  pos: [
+    { id: "family",  name: "亲情与爱",    icon: "💗" },
+    { id: "friend",  name: "友情社交",    icon: "🤝" },
+    { id: "body",    name: "身体舒适",    icon: "🛌" },
+    { id: "growth",  name: "成就成长",    icon: "🌱" },
+    { id: "nature",  name: "自然与小美好", icon: "🌤️" },
+    { id: "alone",   name: "独处与放松",  icon: "🕯️" },
+    { id: "food",    name: "食物与味觉",  icon: "🍜" },
+    { id: "other",   name: "其他",       icon: "📦" }
+  ],
+  neg: [
+    { id: "body",    name: "身体消耗", icon: "😮‍💨" },
+    { id: "emotion", name: "情绪内耗", icon: "🌀" },
+    { id: "people",  name: "人际压力", icon: "🫥" },
+    { id: "work",    name: "工作学习", icon: "📉" },
+    { id: "env",     name: "环境干扰", icon: "🔊" },
+    { id: "habit",   name: "习惯失控", icon: "📱" },
+    { id: "other",   name: "其他",    icon: "📦" }
+  ]
+};
+
+/* ============ 关键词词库 ============ */
+const LEX = {
+  pos: {
+    family: ["爱人","老公","老婆","伴侣","男朋友","女朋友","对象","爸爸","妈妈","父母","家人","女儿","儿子","孩子","宝宝","奶奶","爷爷","外婆","外公","亲人","送的花","花束","玫瑰","情书","拥抱","牵手","约会","结婚","纪念日","回家吃饭","陪爸妈","视频通话","被惦记","被关心","被爱","收到礼物","惊喜","撒娇","一起散步","睡前聊天","告白","陪伴","惦记","牵挂","一家"],
+    friend: ["朋友","闺蜜","兄弟","同学","同事","聚会","约饭","聊天","打电话","被理解","被懂得","夸奖","称赞","被认可","合作","团建","老友","社交","分享","一起玩","群聊","被记住","鼓励","温暖的话","聊得来","相见","拜访","收到消息"],
+    body: ["空调","温度","被窝","被子","热水澡","泡澡","洗澡","睡饱","睡到自然醒","午睡","按摩","伸懒腰","运动","跑步","瑜伽","散步","凉爽","阳光晒","晒太阳","风吹","不冷不热","舒服","放松","深呼吸","身体轻松","早睡","睡得好","休息","躺平","干净衣服","干净","清爽","洗头","护理","体检顺利","健康"],
+    growth: ["完成","做完","搞定","学会","进步","成长","坚持","达成","目标","升职","加薪","通过","考过","被表扬","表扬","灵感","读完","学到","新技能","第一次","突破","效率高","顺利","解决","成就","被采纳","方案过","成功","上手","熟练","被选中","获奖","offer","录取","攒钱","存钱","自律"],
+    nature: ["阳光","晚霞","落日","日出","天空","云朵","星星","月亮","下雨","雨后","彩虹","海","山","湖","花","树","绿植","草地","风","雪","鸟叫","猫","狗","小动物","香","风景","蓝天","晴天","春天","秋天","夜晚的风","空气好","桂花","落叶","季节","露水","晚风"],
+    alone: ["独处","一个人","安静","看剧","电影","听歌","音乐","看书","读书","写字","画画","追剧","播客","发呆","自由","没人打扰","自己的时间","放空","在家","周末","咖啡店","旅行","citywalk","散步","整理房间","布置","香薰","日记","慢下来","洗澡时","泡茶","洗衣服","打扫","窝在","惬意","慵懒"],
+    food: ["好吃","美食","咖啡","奶茶","火锅","甜品","蛋糕","水果","家常菜","做饭","下厨","煮","外卖","面包","冰淇淋","热汤","夜宵","早餐","茶","零食","巧克力","草莓","烧烤","一口","热乎","吃顿","下馆子","酒"],
+    other: []
+  },
+  neg: {
+    body: ["熬夜","失眠","睡不着","睡眠不足","没睡好","早醒","头疼","头痛","颈椎","腰痛","肩膀","眼睛","眼干","疲惫","很累","困","没精神","生病","感冒","胃","肚子","生理期","姨妈","虚弱","乏力","久坐","不运动","爆痘","掉头发","心慌","喘不上气","黑眼圈","皮肤","低烧","看病","吃药"],
+    emotion: ["焦虑","内耗","emo","低落","难过","自责","后悔","孤独","委屈","想哭","抑郁","烦躁","崩溃","不安","害怕","恐惧","没安全感","自我怀疑","自卑","比较","嫉妒","心烦","心里堵","空虚","压抑","否定自己","胡思乱想","想太多","在意别人","怕出错","迷茫","无力","麻木","失落","不配","羞耻","紧张","羞怯"],
+    people: ["催婚","催生","催","吵架","冷战","误会","人际","领导","老板","上司","被误解","被否定","被比较","应酬","被忽视","冷漠","指责","批评","争吵","亲戚","讨厌的人","不回消息","尴尬","讨好","边界","被冒犯","被利用","说教","比较我","家庭矛盾","不被理解","冲突","社交累","说话被","关系"],
+    work: ["加班","任务","deadline","ddl","会议","开会","汇报","绩效","kpi","考核","项目","客户","学习","考试","作业","论文","复习","求职","面试","待业","失业","简历","进度","拖延","改方案","被安排","排期","通勤","出差","重复劳动","无效会议","消息轰炸","选题","组会","导师","考核","赶工","周报","日报","指标","复盘","考试周"],
+    env: ["噪音","吵","装修","邻居","天气","太热","太冷","下雨","阴天","雾霾","拥挤","地铁","堵车","排队","光线","潮湿","闷热","脏","混乱","气味","蓝光","信号差","网速","吵闹","冷气太强","太亮","太暗","蚊虫","蚊子","空间小","杂乱","广告","推送","消息声"],
+    habit: ["刷手机","刷视频","短视频","抖音","小红书","熬夜玩","起不来","赖床","吃太多","暴食","节食","抽烟","喝酒","游戏","沉迷","打游戏","网购","乱花钱","停不下来","报复性","躺了一天","什么都没做","刷到","自动播放","久坐","拖延症","看小说","追剧停不下","点外卖","滑手机"],
+    other: []
+  }
+};
+
+const PREP = {};
+for (const t of ["pos", "neg"]) {
+  PREP[t] = [];
+  for (const [cat, words] of Object.entries(LEX[t])) {
+    for (const w of words) PREP[t].push({ w: w.toLowerCase(), cat });
+  }
+  PREP[t].sort((a, b) => b.w.length - a.w.length);
+}
+
+/* ============ 自动归类 ============ */
+function autoClassify(text, type) {
+  const s = text.toLowerCase().replace(/\s/g, "");
+  for (const item of PREP[type]) {
+    if (s.includes(item.w)) return item.cat;
+  }
+  // 双字滑窗兜底：抓取词库中的二字片段
+  for (const item of PREP[type]) {
+    if (item.w.length < 3) continue;
+    for (let i = 0; i < item.w.length - 1; i++) {
+      if (s.includes(item.w.slice(i, i + 2))) return item.cat;
+    }
+  }
+  return "other";
+}
+
+/* ============ 数据层 ============ */
+const KEY = "energyBoxesV2";
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if (d && Array.isArray(d.pos) && Array.isArray(d.neg)) return d;
+  } catch (e) {}
+  try {
+    const old = JSON.parse(localStorage.getItem("energyBoxes"));
+    if (old) {
+      return {
+        pos: (old.pos || []).map(t => typeof t === "string" ? { text: t } : t),
+        neg: (old.neg || []).map(t => typeof t === "string" ? { text: t } : t)
+      };
+    }
+  } catch (e) {}
+  return { pos: [], neg: [] };
+}
+function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+
+const state = { data: load(), cat: { pos: "all", neg: "all" }, search: "", collapsed: {} };
+
+function catOf(item, type) {
+  if (item.cat) return item.cat;
+  return autoClassify(item.text, type);
+}
+
+/* ============ 渲染 ============ */
+function render() {
+  const q = state.search.trim().toLowerCase();
+
+  for (const type of ["pos", "neg"]) {
+    const list = state.data[type];
+    document.getElementById(type + "Num").textContent = list.length ? list.length + " 个" : "";
+
+    const counts = {};
+    for (const it of list) {
+      const c = catOf(it, type);
+      counts[c] = (counts[c] || 0) + 1;
+    }
+
+    const fWrap = document.getElementById(type + "Filters");
+    fWrap.innerHTML = "";
+    if (list.length) {
+      const b = document.createElement("button");
+      b.textContent = "全部 " + list.length;
+      if (state.cat[type] === "all") b.className = "on";
+      b.onclick = () => { state.cat[type] = "all"; render(); };
+      fWrap.appendChild(b);
+    }
+    for (const c of CATS[type]) {
+      if (!counts[c.id]) continue;
+      const b = document.createElement("button");
+      b.textContent = c.name + " " + counts[c.id];
+      if (state.cat[type] === c.id) b.className = "on";
+      b.onclick = () => { state.cat[type] = c.id; render(); };
+      fWrap.appendChild(b);
+    }
+
+    const gWrap = document.getElementById(type + "Groups");
+    gWrap.innerHTML = "";
+    if (!list.length) {
+      gWrap.innerHTML = '<div class="empty">' + (type === "pos" ? "还没有收集到温暖，等你想起来的时候放进来吧" : "写下让你感到糟糕的事物，先看见它") + "</div>";
+      continue;
+    }
+
+    let shown = 0;
+    for (const c of CATS[type]) {
+      if (state.cat[type] !== "all" && state.cat[type] !== c.id) continue;
+      const items = list.map((it, i) => ({ it: it, i: i }))
+        .filter(o => catOf(o.it, type) === c.id)
+        .filter(o => !q || o.it.text.toLowerCase().indexOf(q) >= 0);
+      if (!items.length) continue;
+      shown += items.length;
+
+      const ck = type + c.id;
+      const g = document.createElement("div");
+      g.className = "group" + (state.collapsed[ck] ? " collapsed" : "");
+
+      const head = document.createElement("div");
+      head.className = "group-head";
+      head.innerHTML = '<span class="arrow">▼</span><span>' + c.icon + '</span><span class="group-name">' + c.name + '</span><span class="group-n">' + items.length + "</span>";
+      head.onclick = () => { state.collapsed[ck] = !state.collapsed[ck]; render(); };
+      g.appendChild(head);
+
+      const tags = document.createElement("div");
+      tags.className = "tags";
+      for (const o of items) {
+        const el = document.createElement("span");
+        el.className = "tag";
+        const pin = o.it.cat ? '<span class="pin" title="已手动指定类别">📌</span>' : "";
+        el.innerHTML = pin + '<span>' + esc(o.it.text) + '</span><span class="del" title="删除">✕</span>';
+        el.querySelector(".del").onclick = e => { e.stopPropagation(); delTag(type, o.i); };
+        el.onclick = e => { e.stopPropagation(); openPicker(e.currentTarget, type, o.i); };
+        tags.appendChild(el);
+      }
+      g.appendChild(tags);
+      gWrap.appendChild(g);
+    }
+
+    if (!shown) gWrap.innerHTML = '<div class="empty">' + (q ? "没有匹配的标签" : "此类别为空") + "</div>";
+  }
+
+  document.getElementById("stat").innerHTML =
+    "共 <b>" + (state.data.pos.length + state.data.neg.length) + "</b> 个标签 · 正能量 <b>" +
+    state.data.pos.length + "</b> · 负能量 <b>" + state.data.neg.length + "</b>";
+}
+
+function esc(s) {
+  return s.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+
+/* ============ 增删 ============ */
+function addTag(type) {
+  const input = document.getElementById(type + "Input");
+  const v = input.value.trim();
+  if (!v) return;
+  const list = state.data[type];
+  if (list.some(it => it.text === v)) { input.value = ""; return; }
+  list.push({ text: v });
+  save(state.data);
+  input.value = "";
+  state.cat[type] = "all";
+  floatUp(type);
+  render();
+}
+function delTag(type, i) {
+  state.data[type].splice(i, 1);
+  save(state.data);
+  render();
+}
+function floatUp(type) {
+  const box = document.getElementById(type + "Box");
+  if (getComputedStyle(box).position === "static") box.style.position = "relative";
+  const pool = type === "pos" ? ["✨", "🌸", "☀️", "💗", "🍵"] : ["🌫️", "🫧", "⚡", "🌀"];
+  const el = document.createElement("span");
+  el.className = "float-item";
+  el.textContent = pool[Math.floor(Math.random() * pool.length)];
+  el.style.left = (25 + Math.random() * 55) + "%";
+  el.style.top = "60px";
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 1400);
+}
+
+/* ============ 类别选择 ============ */
+let popEl = null;
+function closePop() { if (popEl) { popEl.remove(); popEl = null; } }
+document.addEventListener("click", closePop);
+
+function openPicker(anchor, type, idx) {
+  closePop();
+  const item = state.data[type][idx];
+  const cur = catOf(item, type);
+  const p = document.createElement("div");
+  p.className = "pop";
+
+  CATS[type].forEach(c => {
+    const d = document.createElement("div");
+    d.textContent = c.icon + " " + c.name;
+    if (c.id === cur) d.className = "cur";
+    d.onclick = e => {
+      e.stopPropagation();
+      if (c.id === autoClassify(item.text, type)) delete item.cat;
+      else item.cat = c.id;
+      save(state.data);
+      closePop();
+      render();
+    };
+    p.appendChild(d);
+  });
+
+  const sep = document.createElement("div");
+  sep.className = "sep";
+  p.appendChild(sep);
+
+  const reset = document.createElement("div");
+  reset.textContent = "↺ 恢复自动归类";
+  reset.onclick = e => { e.stopPropagation(); delete item.cat; save(state.data); closePop(); render(); };
+  p.appendChild(reset);
+
+  document.body.appendChild(p);
+  const r = anchor.getBoundingClientRect();
+  const ph = p.offsetHeight, pw = p.offsetWidth;
+  let top = r.bottom + 6;
+  if (top + ph > innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+  let left = Math.min(r.left, innerWidth - pw - 8);
+  p.style.top = top + "px";
+  p.style.left = Math.max(8, left) + "px";
+  popEl = p;
+}
+
+/* ============ 工具栏 ============ */
+function toggleAll() {
+  const anyOpen = Object.keys(state.collapsed).some(k => !state.collapsed[k]) || Object.keys(state.collapsed).length === 0;
+  for (const t of ["pos", "neg"]) {
+    for (const c of CATS[t]) state.collapsed[t + c.id] = anyOpen;
+  }
+  render();
+}
+
+document.getElementById("search").addEventListener("input", e => {
+  state.search = e.target.value;
+  render();
+});
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  a.download = "能量盒子_" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importData() { document.getElementById("fileInput").click(); }
+
+document.getElementById("fileInput").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d.pos || !d.neg) throw new Error("bad");
+      for (const t of ["pos", "neg"]) {
+        const exist = new Set(state.data[t].map(i => i.text));
+        for (const it of d[t]) {
+          const obj = typeof it === "string" ? { text: it } : it;
+          if (!exist.has(obj.text)) { state.data[t].push(obj); exist.add(obj.text); }
+        }
+      }
+      save(state.data);
+      render();
+      alert("导入完成，已合并去重 ✨");
+    } catch (err) { alert("文件格式不正确"); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const id = document.activeElement.id;
+  if (id === "posInput") addTag("pos");
+  if (id === "negInput") addTag("neg");
+});
+
+render();
+
+/* PWA：注册 Service Worker，支持离线使用 */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>

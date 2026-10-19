@@ -1,0 +1,13 @@
+{
+  "name": "正负能量盒子",
+  "short_name": "能量盒子",
+  "description": "收集温暖，觉察消耗",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1020",
+  "theme_color": "#0d1020",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
